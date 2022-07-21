@@ -1,16 +1,16 @@
 const Discord = require('discord.js-selfbot-v13')
-const { token } = require('./config.json')
 const logger = require('node-color-log')
-const activities = require('./activities.json')
+const fs = require('fs')
+const request = require('request')
+
+const { token } = require('./config.json')
+const { activities } = require('./activities.json')
 const { msToRelativeTime, Command } = require('./helper.js')
 const { lua_eval } = require('./evaluator.js')
-const fs = require('fs')
-// check if ./logs folder exists
 if (!fs.existsSync('./logs')) {
   fs.mkdirSync('./logs')
 }
 logger.setDate(() => new Date().toLocaleTimeString())
-
 
 const client = new Discord.Client({
   checkUpdate: false
@@ -27,29 +27,51 @@ client.on('ready', () => {
   }, 5000)
 })
 
+function safe_message (msg) {
+  if (msg.length >= 500) {
+    fs.writeFileSync('./logs/' + Date.now() + '.txt', msg)
+    let formData = {
+      file: fs.createReadStream('./logs/' + Date.now() + '.txt'),
+      filename: 'ambatakam.txt'
+    }
+    request.post(
+      { url: 'https://crepe.moe/upload', formData: formData },
+      (err, res, body) => {
+        if (err) {
+          logger.error(err)
+        }
+        logger.info(body, 'Uploaded to crepe.moe > ', res)
+        message.channel.send(`https://crepe.moe/upload/${res}.txt`)
+      }
+    )
+  } else {
+    message.channel.send(msg)
+  }
+}
+
 const messageCreateCommands = []
 messageCreateCommands.push(
+  new Command('All the functions and their usage', 'help', message => {
+    let help_message = ''
+    for (let i = 0; i < messageCreateCommands.length; i++) {
+      help_message += `${messageCreateCommands[i].description}\nUsage: ${messageCreateCommands[i].usage}\n\n`
+    }
+    safe_message(help_message)
+  }),
   new Command('ping', '?', 'ping', message => {
     message.channel.send(
-      `🏓Latency is ${Date.now() -
-        message.createdTimestamp}ms.\n🏓API Latency is ${Math.round(
+      `🏓\nLatency is ${Date.now() -
+        message.createdTimestamp}ms.\nAPI Latency is ${Math.round(
         client.ws.ping
       )}ms`
     )
   }),
-  new Command('uptime', 'How long the bot has been on', 'uptime', message => {
+  new Command('How long the bot has been on', 'uptime', message => {
     let uptime = client.uptime
     let uptime_r = `${msToRelativeTime(uptime)} ago`
     message.channel.send(`Uptime: ${uptime_r}`)
   }),
-  new Command('help', 'All the functions and their usage', 'help', message => {
-    let help_message = ''
-    for (let i = 0; i < messageCreateCommands.length; i++) {
-      help_message += `${messageCreateCommands[i].name}: ${messageCreateCommands[i].description}\nUsage: ${messageCreateCommands[i].usage}\n\n`
-    }
-    message.channel.send(help_message)
-  }),
-  new Command('getpfp', 'Gets the pfp of a user', 'getpfp', message => {
+  new Command('Gets the pfp of a user', 'getpfp', message => {
     let user = message.mentions.users.first()
     if (user) {
       message.channel.send(`${user.avatarURL()}?size=4096`)
@@ -57,7 +79,7 @@ messageCreateCommands.push(
       message.channel.send(`No user Specified`)
     }
   }),
-  new Command('echo', 'Echoes back what you say', 'echo', message => {
+  new Command('Echoes back what you say', 'echo', message => {
     let blocked = ['?echo']
     let args = message.content.split(' ')
     let echo_message = ''
@@ -69,9 +91,9 @@ messageCreateCommands.push(
         echo_message = `"${echo_message}"`
       }
     }
-    message.channel.send(echo_message)
+    safe_message(echo_message)
   }),
-  new Command('eval', 'Evaluates a code snippet (lua)', 'eval', message => {
+  new Command('Evaluates a code snippet (lua)', 'eval', message => {
     let args = message.content.split(' ')
     let code = ''
     for (let i = 1; i < args.length; i++) {
@@ -90,12 +112,7 @@ messageCreateCommands.push(
       }
       logger.info(res_json.Result)
       to_log += res_json.Result
-      if (to_log.length >= 500) {
-        fs.writeFileSync('./logs/' + Date.now() + '.txt', to_log)
-        message.channel.send("Testing message.", { files: ["./logs/" + Date.now() + ".txt"] })
-      } else {
-        message.channel.send(to_log)
-      }
+      safe_message(to_log)
     })
   })
 )
