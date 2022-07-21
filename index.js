@@ -29,19 +29,18 @@ client.on('ready', () => {
 
 function safe_message (to_send,msg) {
   if (to_send.length >= 500) {
-    fs.writeFileSync('./logs/' + Date.now() + '.txt', to_send)
+    let dn = Date.now()
+    fs.writeFileSync('./logs/' + dn + '.txt', to_send)
     let formData = {
-      file: fs.createReadStream('./logs/' + Date.now() + '.txt'),
-      filename: 'ambatakam.txt'
+      file: fs.createReadStream('./logs/' + dn + '.txt'),
     }
     request.post(
       { url: 'https://crepe.moe/upload', formData: formData },
-      (err, res, body) => {
-        if (err) {
-          logger.error(err)
-        }
+      (err, res, body) => { if (err) {logger.error(err)}
         logger.info(body, 'Uploaded to crepe.moe > ', res)
-        msg.channel.send(`https://crepe.moe/upload/${res}.txt`)
+        // remove the '.txt' from body
+        let body_ = body.replace('.txt', '')
+        msg.channel.send(`https://crepe.moe/${body_}`)
       }
     )
   } else {
@@ -58,7 +57,7 @@ messageCreateCommands.push(
     }
     safe_message(help_message,message)
   }),
-  new Command('ping', '?', 'ping', message => {
+  new Command('?', 'ping', message => {
     message.channel.send(
       `🏓\nLatency is ${Date.now() -
         message.createdTimestamp}ms.\nAPI Latency is ${Math.round(
