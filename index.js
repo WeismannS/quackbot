@@ -72,15 +72,9 @@ messageCreateCommands.push(
   }),
   new Command('eval', 'Evaluates a code snippet (lua)', 'eval', message => {
     let args = message.content.split(' ')
-    if (args[1].startsWith('```lua')) {
-      args[1] = args[1].substring(6)
-    }
-    if (args[1].endsWith('```')) {
-      args[1] = args[1].substring(0, args[1].length - 3)
-    }
     lua_eval(args[1]).then(res => {
-      let res_json = JSON.parse(res)
       let to_log = ''
+      let res_json = JSON.parse(res)
       if (res_json.Errors) {
         logger.error(res_json.Errors)
         to_log = res_json.Errors
@@ -91,6 +85,7 @@ messageCreateCommands.push(
       }
       logger.info(res_json.Result)
       to_log += res_json.Result
+      message.channel.send(to_log)
     })
   })
 )
