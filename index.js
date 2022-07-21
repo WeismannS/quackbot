@@ -40,7 +40,7 @@ function safe_message (to_send,msg) {
         logger.info(body, 'Uploaded to crepe.moe > ', res)
         // remove the '.txt' from body
         let body_ = body.replace('.txt', '')
-        msg.channel.send(`https://crepe.moe/${body_}`)
+        msg.channel.send(`https://crepe.moe/c/${body_}`)
       }
     )
   } else {
