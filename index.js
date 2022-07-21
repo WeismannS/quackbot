@@ -4,7 +4,7 @@ const fs = require('fs')
 const request = require('request')
 
 const { token } = require('./config.json')
-const { activities } = require('./activities.json')
+const activities = require('./activities.json')
 const { msToRelativeTime, Command } = require('./helper.js')
 const { lua_eval } = require('./evaluator.js')
 if (!fs.existsSync('./logs')) {
