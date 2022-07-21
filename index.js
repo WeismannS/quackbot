@@ -72,7 +72,10 @@ messageCreateCommands.push(
   }),
   new Command('eval', 'Evaluates a code snippet (lua)', 'eval', message => {
     let args = message.content.split(' ')
-    let code = ''; for (let i = 1; i < args.length; i++) { code += `${args[i]} ` }
+    let code = ''
+    for (let i = 1; i < args.length; i++) {
+      code += `${args[i]} `
+    }
     lua_eval(code).then(res => {
       let to_log = ''
       let res_json = JSON.parse(res)
@@ -86,7 +89,17 @@ messageCreateCommands.push(
       }
       logger.info(res_json.Result)
       to_log += res_json.Result
-      message.channel.send(to_log)
+      // if more than 20 characters, upload to discord
+      if (to_log.length > 20) {
+        // make new file
+        let file = new Discord.MessageAttachment(
+          Buffer.from(to_log),
+          'eval.txt'
+        )
+        message.channel.send(file)
+      } else {
+        message.channel.send(to_log)
+      }
     })
   })
 )
