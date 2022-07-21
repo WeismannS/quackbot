@@ -72,7 +72,8 @@ messageCreateCommands.push(
   }),
   new Command('eval', 'Evaluates a code snippet (lua)', 'eval', message => {
     let args = message.content.split(' ')
-    lua_eval(args[1]).then(res => {
+    let code = ''; for (let i = 1; i < args.length; i++) { code += `${args[i]} ` }
+    lua_eval(code).then(res => {
       let to_log = ''
       let res_json = JSON.parse(res)
       if (res_json.Errors) {
