@@ -2,9 +2,8 @@ const Discord = require('discord.js-selfbot-v13')
 const { token } = require('./config.json')
 const logger = require('node-color-log')
 const activities = require('./activities.json')
-const safeEval = require('safe-eval')
 const { msToRelativeTime, Command } = require('./helper.js')
-// check if there's a database.json file
+const { lua_eval } = require('./evaluator.js')
 const fs = require('fs')
 if (!fs.existsSync('./database.json')) {
   fs.writeFileSync('./database.json', '{}')
@@ -30,7 +29,12 @@ client.on('ready', () => {
 const messageCreateCommands = []
 messageCreateCommands.push(
   new Command('ping', '?', 'ping', message => {
-    message.channel.send('Pong!')
+    message.channel.send(
+      `🏓Latency is ${Date.now() -
+        message.createdTimestamp}ms.\n🏓API Latency is ${Math.round(
+        client.ws.ping
+      )}ms`
+    )
   }),
   new Command('uptime', 'How long the bot has been on', 'uptime', message => {
     let uptime = client.uptime
@@ -49,11 +53,11 @@ messageCreateCommands.push(
     if (user) {
       message.channel.send(`${user.avatarURL()}?size=4096`)
     } else {
-      message.channel.send(`no user, wat?`)
+      message.channel.send(`No user Specified`)
     }
   }),
   new Command('echo', 'Echoes back what you say', 'echo', message => {
-    let blocked= ['?echo']
+    let blocked = ['?echo']
     let args = message.content.split(' ')
     let echo_message = ''
     for (let i = 1; i < args.length; i++) {
@@ -65,6 +69,29 @@ messageCreateCommands.push(
       }
     }
     message.channel.send(echo_message)
+  }),
+  new Command('eval', 'Evaluates a code snippet (lua)', 'eval', message => {
+    let args = message.content.split(' ')
+    if (args[1].startsWith('```lua')) {
+      args[1] = args[1].substring(6)
+    }
+    if (args[1].endsWith('```')) {
+      args[1] = args[1].substring(0, args[1].length - 3)
+    }
+    lua_eval(args[1]).then(res => {
+      let res_json = JSON.parse(res)
+      let to_log = ''
+      if (res_json.Errors) {
+        logger.error(res_json.Errors)
+        to_log = res_json.Errors
+      }
+      if (res_json.Warnings) {
+        logger.warn(res_json.Warnings)
+        to_log += res_json.Warnings
+      }
+      logger.info(res_json.Result)
+      to_log += res_json.Result
+    })
   })
 )
 
