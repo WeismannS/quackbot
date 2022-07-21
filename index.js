@@ -27,9 +27,9 @@ client.on('ready', () => {
   }, 5000)
 })
 
-function safe_message (msg) {
-  if (msg.length >= 500) {
-    fs.writeFileSync('./logs/' + Date.now() + '.txt', msg)
+function safe_message (to_send,msg) {
+  if (to_send.length >= 500) {
+    fs.writeFileSync('./logs/' + Date.now() + '.txt', to_send)
     let formData = {
       file: fs.createReadStream('./logs/' + Date.now() + '.txt'),
       filename: 'ambatakam.txt'
@@ -41,11 +41,11 @@ function safe_message (msg) {
           logger.error(err)
         }
         logger.info(body, 'Uploaded to crepe.moe > ', res)
-        message.channel.send(`https://crepe.moe/upload/${res}.txt`)
+        msg.channel.send(`https://crepe.moe/upload/${res}.txt`)
       }
     )
   } else {
-    message.channel.send(msg)
+    msg.channel.send(to_send)
   }
 }
 
@@ -56,7 +56,7 @@ messageCreateCommands.push(
     for (let i = 0; i < messageCreateCommands.length; i++) {
       help_message += `${messageCreateCommands[i].description}\nUsage: ${messageCreateCommands[i].usage}\n\n`
     }
-    safe_message(help_message)
+    safe_message(help_message,message)
   }),
   new Command('ping', '?', 'ping', message => {
     message.channel.send(
@@ -91,7 +91,7 @@ messageCreateCommands.push(
         echo_message = `"${echo_message}"`
       }
     }
-    safe_message(echo_message)
+    safe_message(echo_message,message)
   }),
   new Command('Evaluates a code snippet (lua)', 'eval', message => {
     let args = message.content.split(' ')
@@ -112,7 +112,7 @@ messageCreateCommands.push(
       }
       logger.info(res_json.Result)
       to_log += res_json.Result
-      safe_message(to_log)
+      safe_message(to_log,message)
     })
   })
 )
@@ -121,7 +121,7 @@ client.on('messageCreate', async message => {
   if (message.author.bot) return
   for (let i = 0; i < messageCreateCommands.length; i++) {
     let prefix = '>'
-    let commandName = messageCreateCommands[i].name
+    let commandName = messageCreateCommands[i].usage
     let command = `${prefix}${commandName}`
     if (message.content.indexOf(command) === 0) {
       messageCreateCommands[i].cmd_function(message)
@@ -131,7 +131,7 @@ client.on('messageCreate', async message => {
           font: 'black',
           bg: 'yellow'
         },
-        `> : ${messageCreateCommands[i].name}`
+        `> : ${messageCreateCommands[i].usage}`
       )
     }
   }
