@@ -6,7 +6,7 @@ const request = require('request')
 const { token } = require('./config.json')
 const activities = require('./activities.json')
 const { msToRelativeTime, Command } = require('./helper.js')
-const { lua_eval } = require('./evaluator.js')
+const { rextest_eval } = require('./evaluator.js')
 if (!fs.existsSync('./logs')) {
   fs.mkdirSync('./logs')
 }
@@ -27,18 +27,20 @@ client.on('ready', () => {
   }, 5000)
 })
 
-function safe_message (to_send,msg) {
+function safe_message (to_send, msg) {
   if (to_send.length >= 500) {
     let dn = Date.now()
     fs.writeFileSync('./logs/' + dn + '.txt', to_send)
     let formData = {
-      file: fs.createReadStream('./logs/' + dn + '.txt'),
+      file: fs.createReadStream('./logs/' + dn + '.txt')
     }
     request.post(
       { url: 'https://crepe.moe/upload', formData: formData },
-      (err, res, body) => { if (err) {logger.error(err)}
+      (err, res, body) => {
+        if (err) {
+          logger.error(err)
+        }
         logger.info(body, 'Uploaded to crepe.moe > ', res)
-        // remove the '.txt' from body
         let body_ = body.replace('.txt', '')
         msg.channel.send(`https://crepe.moe/c/${body_}`)
       }
@@ -48,6 +50,29 @@ function safe_message (to_send,msg) {
   }
 }
 
+function safe_eval (id, message) {
+  let args = message.content.split(' ')
+  let code = ''
+  for (let i = 1; i < args.length; i++) {
+    code += `${args[i]} `
+  }
+  rextest_eval(code, id).then(res => {
+    let to_log = ''
+    let res_json = JSON.parse(res)
+    if (res_json.Errors) {
+      logger.error(res_json.Errors)
+      to_log = res_json.Errors
+    }
+    if (res_json.Warnings) {
+      logger.warn(res_json.Warnings)
+      to_log += res_json.Warnings
+    }
+    logger.info(res_json.Result)
+    to_log += res_json.Result
+    safe_message(to_log, message)
+  })
+}
+
 const messageCreateCommands = []
 messageCreateCommands.push(
   new Command('All the functions and their usage', 'help', message => {
@@ -55,7 +80,7 @@ messageCreateCommands.push(
     for (let i = 0; i < messageCreateCommands.length; i++) {
       help_message += `${messageCreateCommands[i].description}\nUsage: ${messageCreateCommands[i].usage}\n\n`
     }
-    safe_message(help_message,message)
+    safe_message(help_message, message)
   }),
   new Command('?', 'ping', message => {
     message.channel.send(
@@ -90,29 +115,13 @@ messageCreateCommands.push(
         echo_message = `"${echo_message}"`
       }
     }
-    safe_message(echo_message,message)
+    safe_message(echo_message, message)
   }),
-  new Command('Evaluates a code snippet (lua)', 'eval', message => {
-    let args = message.content.split(' ')
-    let code = ''
-    for (let i = 1; i < args.length; i++) {
-      code += `${args[i]} `
-    }
-    lua_eval(code).then(res => {
-      let to_log = ''
-      let res_json = JSON.parse(res)
-      if (res_json.Errors) {
-        logger.error(res_json.Errors)
-        to_log = res_json.Errors
-      }
-      if (res_json.Warnings) {
-        logger.warn(res_json.Warnings)
-        to_log += res_json.Warnings
-      }
-      logger.info(res_json.Result)
-      to_log += res_json.Result
-      safe_message(to_log,message)
-    })
+  new Command('Evaluates a lua code snippet', 'lua', message => {
+    safe_eval(14, message)
+  }),
+  new Command('Evaluates a kotlin code snippet', 'kotlin', message => {
+    safe_eval(43, message)
   })
 )
 

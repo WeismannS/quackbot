@@ -1,9 +1,9 @@
 const logger = require('node-color-log')
 const request = require('request')
-function lua_eval (code) {
+function rextest_eval (code, lcw) {
   let url = 'https://rextester.com/rundotnet/Run'
   let data = {
-    LanguageChoiceWrapper: '14',
+    LanguageChoiceWrapper: toString(lcw),
     EditorChoiceWrapper: '1',
     LayoutChoiceWrapper: '1',
     Program: code,
@@ -30,7 +30,7 @@ function lua_eval (code) {
   })
 }
 
-module.exports = { lua_eval }
+module.exports = { lua_eval: rextest_eval }
 // {"Warnings":null,"Errors":null,"Result":"Hello, World!\n","Stats":"Absolute running time: 0.17 sec, cpu time: 0.01 sec, memory peak: 5 Mb, absolute service time: 0,3 sec","Files":null,"NotLoggedIn":false}
 // lua_eval('print("Hello, World!")').then(res => {
 //   // parse the res to show error or warning when there is
