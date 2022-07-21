@@ -5,11 +5,12 @@ const activities = require('./activities.json')
 const { msToRelativeTime, Command } = require('./helper.js')
 const { lua_eval } = require('./evaluator.js')
 const fs = require('fs')
-if (!fs.existsSync('./database.json')) {
-  fs.writeFileSync('./database.json', '{}')
+// check if ./logs folder exists
+if (!fs.existsSync('./logs')) {
+  fs.mkdirSync('./logs')
 }
-const database = require('./database.json')
 logger.setDate(() => new Date().toLocaleTimeString())
+
 
 const client = new Discord.Client({
   checkUpdate: false
@@ -89,14 +90,9 @@ messageCreateCommands.push(
       }
       logger.info(res_json.Result)
       to_log += res_json.Result
-      // if more than 20 characters, upload to discord
-      if (to_log.length > 20) {
-        // make new file
-        let file = new Discord.MessageAttachment(
-          Buffer.from(to_log),
-          'eval.txt'
-        )
-        message.channel.send(file)
+      if (to_log.length >= 500) {
+        fs.writeFileSync('./logs/' + Date.now() + '.txt', to_log)
+        message.channel.send("Testing message.", { files: ["./logs/" + Date.now() + ".txt"] })
       } else {
         message.channel.send(to_log)
       }
