@@ -50,8 +50,7 @@ function safe_message (to_send, msg) {
   }
 }
 
-function safe_eval (id, message) {
-  let args = message.content.split(' ')
+function safe_eval (id, args) {
   let code = ''
   for (let i = 1; i < args.length; i++) {
     code += `${args[i]} `
@@ -69,7 +68,7 @@ function safe_eval (id, message) {
     }
     logger.info(res_json.Result)
     to_log += res_json.Result
-    safe_message(to_log, message)
+    return to_log
   })
 }
 
@@ -118,10 +117,10 @@ messageCreateCommands.push(
     safe_message(echo_message, message)
   }),
   new Command('Evaluates a lua code snippet', 'lua', message => {
-    safe_eval(14, message)
+    safe_message(safe_eval(14), message.content.split(' '))
   }),
   new Command('Evaluates a kotlin code snippet', 'kotlin', message => {
-    safe_eval(43, message)
+    safe_message(safe_eval(43), message.content.split(' '))
   })
 )
 
